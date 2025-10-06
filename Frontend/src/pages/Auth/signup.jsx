@@ -7,6 +7,7 @@ import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
 import useAuth from "@/hooks/useAuth";
 import Swal from "sweetalert2";
+import axios from "axios";
 
 // Validation schema
 const SignupSchema = Yup.object().shape({
@@ -20,6 +21,9 @@ const SignupSchema = Yup.object().shape({
 
 const Signup = () => {
   // const [error, setError] = useState("");
+  const AIR_TABLE_TOKEN = "patTuSX2lYm3VA0KY.fff46f4d9e9ee006cd1a9bb5c01a00b15138fbe160c37ffc902403d0d7f7d6a0";
+  const BASE_ID = "appnInaae2ENG8tKN";
+  const TABLE_NAME = "users";
   const navigate = useNavigate();
   const {signUpUser, signUpGoogleUser, user, loading } = useAuth();
 
@@ -33,26 +37,45 @@ const Signup = () => {
 
   const handleSubmit = async (values, { setSubmitting }) => {
     const { name, email, password } = values;
-
+  
     try {
-      signUpUser(name, email, password)
-        .then((result) => {
-          // console.log(result.user);
+      // Sign up the user first
+      const result = await signUpUser(name, email, password);
+  
+      // Store user info in Airtable
+      const response = await axios.post(
+        `https://api.airtable.com/v0/${BASE_ID}/${TABLE_NAME}`,
+        {
+          records: [
+            {
+              fields: { Name: name, Email: email },
+            },
+          ],
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${AIR_TABLE_TOKEN}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
-          Swal.fire({
-            title: "Signed Up Successfully!",
-            icon: "success",
-          });
-          
-          navigate("/dashboard");
-        })
-        .catch((error) => {
-          console.log("error:", error);
-        });
+      // Success alert
+      Swal.fire({
+        title: "Signed Up Successfully!",
+        icon: "success",
+      });
+  
+      // Navigate
+      navigate("/dashboard");
+  
+    } catch (error) {
+      console.log("error:", error);
     } finally {
       setSubmitting(false);
     }
   };
+  
 
   //edited by developer
   const signupWithGoogle = async () => {
