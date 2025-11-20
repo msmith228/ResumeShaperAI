@@ -39,42 +39,50 @@ const Signup = () => {
     const { name, email, password } = values;
   
     try {
-      // Sign up the user first
+      // 🟦 1. Sign up user
       const result = await signUpUser(name, email, password);
   
-      // Store user info in Airtable
-      const response = await axios.post(
-        `https://api.airtable.com/v0/${BASE_ID}/${TABLE_NAME}`,
-        {
-          records: [
-            {
-              fields: { Name: name, Email: email },
-            },
-          ],
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${AIR_TABLE_TOKEN}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      // Success alert
-      Swal.fire({
-        title: "Signed Up Successfully!",
-        icon: "success",
-      });
+      // result = { user, needsVerification: true }
+      if (result.needsVerification) {
   
-      // Navigate
-      navigate("/dashboard");
+        // 🟦 2. Save user in Airtable (optional but OK)
+        await axios.post(
+          `https://api.airtable.com/v0/${BASE_ID}/${TABLE_NAME}`,
+          {
+            records: [
+              {
+                fields: { Name: name, Email: email },
+              },
+            ],
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${AIR_TABLE_TOKEN}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+  
+        // 🟦 3. Show Success
+        Swal.fire({
+          title: "Check Your Email to Verify Your Account",
+          text: "We sent you a verification link.",
+          icon: "success",
+        });
+  
+        // 🟦 4. Redirect to verify page
+        navigate("/verify-email");
+        return; // Ensure function exits
+      }
   
     } catch (error) {
-      console.log("error:", error);
+      console.log("Signup error:", error);
+      Swal.fire("Error", error.message, "error");
     } finally {
       setSubmitting(false);
     }
   };
+  
   
 
   //edited by developer
